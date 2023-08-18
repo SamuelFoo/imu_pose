@@ -2,7 +2,6 @@ import bluetooth
 import numpy as np
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
-from multiprocessing import Process
 
 def initBluetoothSocket(address):
     d = bluetooth.find_service(address=address)[0]
@@ -38,6 +37,8 @@ def getSocketData(sock):
     data = filter(lambda row: row[0] == "@" and row[-1] == "@" and len(row) > 1, data)
     data = map(lambda x: list(x.strip("@").split(",")), data)
     data = np.array(list(data), dtype=np.float64)
+    if not data.any():
+        return np.array([]), np.array([]), np.array([]), np.array([])
     time, quatI, quatJ, quatK, quatReal, _ = data.T
     time /= 1e3
     roll, pitch, yaw = euler_from_quaternion(x=quatI, y=quatJ, z=quatK, w=quatReal)
@@ -45,13 +46,24 @@ def getSocketData(sock):
     return time, roll, pitch, yaw
 
 class AnimationWorker():
-    def __init__(self, address):
-        self.sock = initBluetoothSocket(address=address)
-        self.data = np.array([[],[],[],[]])
+    def __init__(self, addressLower, addressUpper, timeInterval=500):
+        self.sockLower = initBluetoothSocket(address=addressLower)
+        self.sockUpper = initBluetoothSocket(address=addressUpper)
+        self.dataLower = np.array([[],[],[],[]])
+        self.dataUpper = np.array([[],[],[],[]])
+        self.timeInterval = timeInterval
 
-    def run(self):
-        time_interval = 500
-        
+    def createSubPlot(self, fig, ax, yLabel, idx, color):
+        plt.ylabel(yLabel)
+        ax.relim()
+        ax.autoscale_view()
+        lowerLine, = plt.plot([], [], f"{color}-")
+        upperLine, = plt.plot([], [], f"{color}--")
+        lines = (lowerLine, upperLine)
+        ani = animation.FuncAnimation(fig, self.animateMain, fargs=(ax, lines, idx), interval=self.timeInterval)
+        return ani
+
+    def run(self):        
         # check number of charts to decide subplot orientation
         sp1 = 313
         sp2 = 312
@@ -59,48 +71,40 @@ class AnimationWorker():
 
         fig = plt.figure(figsize=(12,7))
 
-        # initialize subplot 1
+        # initialize subplots
         ax1 = fig.add_subplot(sp1)
-        plt.ylabel("Roll")
-        ax1.relim()
-        ax1.autoscale_view()
-        y1line, = plt.plot([], [], "r-")
-        ani1 = animation.FuncAnimation(fig, self.animateMain, fargs=(ax1, y1line, 1), interval=time_interval)
+        ani1 = self.createSubPlot(fig, ax1, "Roll", 1, "r")
 
-        # initialize subplot 2
         ax2 = fig.add_subplot(sp2)
-        plt.ylabel("Pitch")
-        ax2.relim()
-        ax2.autoscale_view()
-        y2line, = plt.plot([], [], "b-")
-        ani2 = animation.FuncAnimation(fig, self.animateSide, fargs=(ax2, y2line, 2), interval=time_interval)
+        ani2 = self.createSubPlot(fig, ax2, "Pitch", 2, "b")
 
-        # initialize subplot 3
         ax3 = fig.add_subplot(sp3)
-        plt.ylabel("Yaw")
-        ax3.relim()
-        ax3.autoscale_view()
-        y3line, = plt.plot([], [], "k-")
-        ani3 = animation.FuncAnimation(fig, self.animateSide, fargs=(ax3, y3line, 3), interval=time_interval)
+        ani3 = self.createSubPlot(fig, ax3, "Yaw", 3, "k")
 
         print("Commence data acquisition.")
         plt.tight_layout()
         plt.show()
 
     # animation to update graph for each data point collected
-    def animateMain(self, i, ax, line, idx):
-        time, roll, pitch, yaw = getSocketData(self.sock)
-        self.data = np.concatenate((self.data, np.vstack((time, roll, pitch, yaw))), axis=1)
+    def animateMain(self, i, ax, lines, idx):
+        def inner(data, sock):
+            time, roll, pitch, yaw = getSocketData(sock)
+            data = np.concatenate((data, np.vstack((time, roll, pitch, yaw))), axis=1)
+            return data
 
-        line, = self.animateSide(i, ax, line, idx)
+        self.dataLower = inner(self.dataLower, self.sockLower)
+        self.dataUpper = inner(self.dataUpper, self.sockUpper)
+
+        line, = self.animateSide(i, ax, lines, idx)
 
         return line,
 
     # sub-animation for each subsequent data point collected
-    def animateSide(self, i, ax, line, idx):
-        line.set_data([self.data[0], self.data[idx]])
+    def animateSide(self, i, ax, lines, idx):
+        lines[0].set_data([self.dataLower[0]-self.dataLower[0][0], self.dataLower[idx]])
+        lines[1].set_data([self.dataUpper[0]-self.dataUpper[0][0], self.dataUpper[idx]])
         ax.relim()
         ax.autoscale_view()
 
-        return line,
+        return lines,
 
