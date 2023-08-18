@@ -1,0 +1,5 @@
+# ESP32
+Likely to be DFRobot's ESP-32-WROOM module
+
+# Python Bluetooth
+pip install git+https://github.com/pybluez/pybluez.git#egg=pybluez
