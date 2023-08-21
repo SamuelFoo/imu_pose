@@ -1,10 +1,10 @@
-#ESP32
+# ESP32
 Likely to be DFRobot's ESP-32-WROOM module
 
-#Python Bluetooth
+# Python Bluetooth
 pip install git+https://github.com/pybluez/pybluez.git#egg=pybluez
 
-#Breadboard Plan
+# Breadboard Plan
 ESP32: a12, j12, j30, b30
 BNO080: j1 to i10
 Connections:
