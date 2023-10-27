@@ -21,6 +21,8 @@ pip install git+https://github.com/pybluez/pybluez.git#egg=pybluez
     j21 to Vibration Motor IN (ESP32 GPIO5 to Vibration Motor IN)  
     g1 to Vibration Motor VCC (ESP32 3.3V to Vibration Motor VCC)  
 
+![esp32-devkitC-v4-pinout](https://github.com/SamuelFoo/imu_pose/assets/26446878/9ae7118c-93e6-4553-b023-82b782f59cf9)
+
 Battery: 4 1.5V AA Cylindrical Batteries.
 
 # Use IMU_BT_Test
