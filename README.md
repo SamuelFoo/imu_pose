@@ -5,8 +5,8 @@ Likely to be DFRobot's ESP-32-WROOM module
 pip install git+https://github.com/pybluez/pybluez.git#egg=pybluez  
 
 # Breadboard Plan
-    ESP32: a12, j12, j30, b30  
-    BNO080: j1 to i10  
+    ESP32: b12, i12, i30, b30  
+    BNO080: j1 to j10  
 
     Connections:  
     Batt VCC to a30  
